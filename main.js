@@ -27,7 +27,7 @@ function Model(name) {
     gl.vertexAttribPointer(shProgram.iAttribVertex, 3, gl.FLOAT, false, 0, 0)
     gl.enableVertexAttribArray(shProgram.iAttribVertex)
 
-    gl.drawArrays(gl.LINE_STRIP, 0, this.count)
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.count)
   }
 }
 
@@ -86,18 +86,18 @@ function draw() {
 
 function CreateSurfaceData() {
   let vertexList = []
-  let R = 0.5
+  let R = 5
   let n = 7
-  let a = 1
-  for (let dy = 0; dy < 3; dy += 0.5) {
-    for (let phi = 0; phi < 360; phi += 5) {
+  let a = 3
+  let zoom = 10
+  for (let dz = -15; dz < 15; dz += 1) {
+    for (let phi = 0; phi < 2 * Math.PI; phi += 0.1) {
       let x = (R + a * Math.cos(n * phi)) * Math.cos(phi)
-      let z = (R + a * Math.cos(n * phi)) * Math.sin(phi)
-      let y = dy
-      vertexList.push(x, y, z)
+      let y = (R + a * Math.cos(n * phi)) * Math.sin(phi)
+      let z = dz
+      vertexList.push(x / zoom, y / zoom, z / zoom)
     }
   }
-
   return vertexList
 }
 
