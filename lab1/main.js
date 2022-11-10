@@ -86,15 +86,16 @@ function draw() {
 
 function CreateSurfaceData() {
   let vertexList = []
-  let R = 2
-  let n = 1
+  let R = 0.5
+  let n = 7
   let a = 1
-  for (let phi = 0; phi < 360; phi += 5) {
-    let x = (R + a * Math.cos(n * phi)) * Math.cos(phi)
-    let y = (R + a * Math.cos(n * phi)) * Math.sin(phi)
-    let z = 0
-    vertexList.push(x, y, z)
-    vertexList.push(x, y, z)
+  for (let dy = 0; dy < 3; dy += 0.5) {
+    for (let phi = 0; phi < 360; phi += 5) {
+      let x = (R + a * Math.cos(n * phi)) * Math.cos(phi)
+      let z = (R + a * Math.cos(n * phi)) * Math.sin(phi)
+      let y = dy
+      vertexList.push(x, y, z)
+    }
   }
 
   return vertexList
