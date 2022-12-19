@@ -89,13 +89,17 @@ function CreateSurfaceData() {
   let R = 5
   let n = 7
   let a = 3
-  let zoom = 10
-  let step = 0.1
-  for (let dz = -20; dz < 20; dz += step) {
-    for (let phi = 0; phi < 2 * Math.PI; phi += 0.1) {
-      let x = (R + a * Math.cos(n * phi)) * Math.cos(phi)
-      let y = (R + a * Math.cos(n * phi)) * Math.sin(phi)
-      let z = dz
+  let zoom = 5
+  let step = 0.01
+  for (let v0 = 0; v0 <= Math.PI; v0 += step) {
+    for (let phi = 0; phi <= 2 * Math.PI; phi += step) {
+      let x =
+        (R * Math.cos(v0) + a * (1 - Math.sin(v0)) * Math.cos(n * phi)) *
+        Math.cos(phi)
+      let y =
+        (R * Math.cos(v0) + a * (1 - Math.sin(v0)) * Math.cos(n * phi)) *
+        Math.sin(phi)
+      let z = R * Math.sin(v0)
       vertexList.push(x / zoom, y / zoom, z / zoom)
     }
   }
