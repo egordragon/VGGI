@@ -13,13 +13,17 @@ function deg2rad(angle) {
 function Model(name) {
   this.name = name
   this.iVertexBuffer = gl.createBuffer()
+  this.iNormalBuffer = gl.createBuffer()
   this.count = 0
 
-  this.BufferData = function (vertices) {
+  this.BufferData = function ({ vertexList, normalList }) {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.iVertexBuffer)
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STREAM_DRAW)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexList), gl.STREAM_DRAW)
 
-    this.count = vertices.length / 3
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.iNormalBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normalList), gl.STREAM_DRAW)
+
+    this.count = vertexList.length / 3
   }
 
   this.Draw = function () {
@@ -86,25 +90,71 @@ function draw() {
 
 function CreateSurfaceData() {
   let vertexList = []
-  let R = 5
+  let normalList = []
+  let deltaV0 = 0.003
+  let deltaPhi = 0.003
+  let R = 2
   let n = 7
   let a = 3
-  let zoom = 5
+  let zoom = 3
   let step = 0.01
   for (let v0 = 0; v0 <= Math.PI; v0 += step) {
     for (let phi = 0; phi <= 2 * Math.PI; phi += step) {
-      let x =
-        (R * Math.cos(v0) + a * (1 - Math.sin(v0)) * Math.cos(n * phi)) *
-        Math.cos(phi)
-      let y =
-        (R * Math.cos(v0) + a * (1 - Math.sin(v0)) * Math.cos(n * phi)) *
-        Math.sin(phi)
-      let z = R * Math.sin(v0)
+      let x = calcX(v0, phi, a, R, n)
+      let y = calcY(v0, phi, a, R, n)
+      let z = calcZ(v0, R)
       vertexList.push(x / zoom, y / zoom, z / zoom)
+
+      x = calcX(v0 + step, phi, a, R, n)
+      y = calcY(v0 + step, phi, a, R, n)
+      z = calcZ(v0 + step, R)
+      vertexList.push(x / zoom, y / zoom, z / zoom)
+
+      let normal = m4.cross(
+        calcDerV0(v0, phi, deltaV0, a, R, n),
+        calcDerPhi(v0, phi, deltaPhi, a, R, n)
+      )
+      normalList.push(normal[0] / zoom, normal[1] / zoom, normal[2] / zoom)
+
+      normal = m4.cross(
+        calcDerV0(v0 + step, phi, deltaV0, a, R, n),
+        calcDerPhi(v0 + step, phi, deltaPhi, a, R, n)
+      )
+      normalList.push(normal[0] / zoom, normal[1] / zoom, normal[2] / zoom)
     }
   }
-  return vertexList
+  return { vertexList, normalList }
 }
+
+function calcX(v0, phi, a, R, n) {
+  return (
+    (R * Math.cos(v0) + a * (1 - Math.sin(v0)) * Math.cos(n * phi)) *
+    Math.cos(phi)
+  )
+}
+
+function calcY(v0, phi, a, R, n) {
+  return (
+    (R * Math.cos(v0) + a * (1 - Math.sin(v0)) * Math.cos(n * phi)) *
+    Math.sin(phi)
+  )
+}
+
+function calcZ(v0, R) {
+  return R * Math.sin(v0)
+}
+
+const calcDerV0 = (v0, phi, deltaV0, a, R, n) => [
+  (calcX(v0 + deltaV0, phi, a, R, n) - calcX(v0, phi, a, R, n)) / deltaV0,
+  (calcY(v0 + deltaV0, phi, a, R, n) - calcY(v0, phi, a, R, n)) / deltaV0,
+  (calcZ(v0 + deltaV0, R) - calcZ(v0, R)) / deltaV0,
+]
+
+const calcDerPhi = (v0, phi, deltaPhi, a, R, n) => [
+  (calcX(v0, phi + deltaPhi, a, R, n) - calcX(v0, phi, a, R, n)) / deltaPhi,
+  (calcY(v0, phi + deltaPhi, a, R, n) - calcY(v0, phi, a, R, n)) / deltaPhi,
+  (calcZ(v0, R) - calcZ(v0, R)) / deltaPhi,
+]
 
 /* Initialize the WebGL context. Called from init() */
 function initGL() {
