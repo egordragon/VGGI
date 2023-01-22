@@ -349,6 +349,20 @@ window.addEventListener('keydown', (event) => {
     case 'ArrowRight':
       onArrowRight()
       break
+    case 'd':
+      point.x = point.x + 0.1
+      draw()
+      break
+    case 'a':
+      point.x = point.x - 0.1
+    case 'w':
+      point.y = point.y + 0.1
+      draw()
+      break
+    case 's':
+      point.y = point.y - 0.1
+      draw()
+      break
     default:
       break
   }

@@ -19,6 +19,21 @@
     <h1>Egor Boyko TP21mp</h1>
     <h2>A Corrugated Sphere with "Trackball" Mouse Rotation</h2>
 
+    <div>
+      <label for="rotAngle">Angle of rotation(-360 to 360):</label>
+      <input
+        id="rotAngle"
+        type="range"
+        min="-360"
+        max="360"
+        step="1"
+        value="0"
+        onchange="draw()"
+        oninput="this.nextElementSibling.value = this.value"
+      />
+      <output>0</output>
+    </div>
+
     <div id="canvas-holder">
       <canvas
         width="1280"
