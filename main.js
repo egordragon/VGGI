@@ -31,7 +31,11 @@ function Model(name) {
     gl.vertexAttribPointer(shProgram.iAttribVertex, 3, gl.FLOAT, false, 0, 0)
     gl.enableVertexAttribArray(shProgram.iAttribVertex)
 
-    gl.drawArrays(gl.LINE_STRIP, 0, this.count)
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.iNormalBuffer)
+    gl.vertexAttribPointer(shProgram.iNormal, 3, gl.FLOAT, true, 0, 0)
+    gl.enableVertexAttribArray(shProgram.iNormal)
+
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.count)
   }
 }
 
@@ -47,6 +51,17 @@ function ShaderProgram(name, program) {
   // Location of the uniform matrix representing the combined transformation.
   this.iModelViewProjectionMatrix = -1
 
+  this.iNormal = -1
+  this.iNormalMatrix = -1
+
+  this.iLightPosition = -1
+  this.iLightVec = -1
+
+  this.iAmbientColor = -1
+  this.iDiffuseColor = -1
+  this.iSpecularColor = -1
+  this.iShininess = -1
+
   this.Use = function () {
     gl.useProgram(this.prog)
   }
@@ -60,6 +75,9 @@ function draw() {
   gl.clearColor(0, 0, 0, 1)
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
+  gl.enable(gl.CULL_FACE)
+  gl.enable(gl.DEPTH_TEST)
+
   /* Set the values of the projection transformation */
   let projection = m4.perspective(Math.PI / 8, 1, 8, 12)
 
@@ -71,16 +89,30 @@ function draw() {
 
   let matAccum0 = m4.multiply(rotateToPointZero, modelView)
   let matAccum1 = m4.multiply(translateToPointZero, matAccum0)
+  let modelViewInverse = m4.inverse(matAccum1, new Float32Array(16))
+  let normalMatrix = m4.transpose(modelViewInverse, new Float32Array(16))
 
   /* Multiply the projection matrix times the modelview matrix to give the
        combined transformation matrix, and send that to the shader program. */
   let modelViewProjection = m4.multiply(projection, matAccum1)
-
   gl.uniformMatrix4fv(
     shProgram.iModelViewProjectionMatrix,
     false,
     modelViewProjection
   )
+
+  gl.uniformMatrix4fv(shProgram.iNormalMatrix, false, normalMatrix)
+
+  gl.uniform3fv(shProgram.iLightPosition, lightCoordinates())
+  gl.uniform3fv(shProgram.iLightDirection, [1, 0, 0])
+
+  gl.uniform3fv(shProgram.iLightVec, new Float32Array(3))
+
+  gl.uniform1f(shProgram.iShininess, 1.5)
+
+  gl.uniform3fv(shProgram.iAmbientColor, [0.0, 0.0, 0.0])
+  gl.uniform3fv(shProgram.iDiffuseColor, [0.034, 0.537, 0.85])
+  gl.uniform3fv(shProgram.iSpecularColor, [0.0, 0.0, 0.0])
 
   /* Draw the six faces of a cube, with different colors. */
   gl.uniform4fv(shProgram.iColor, [1, 1, 0, 1])
@@ -91,23 +123,23 @@ function draw() {
 function CreateSurfaceData() {
   let vertexList = []
   let normalList = []
-  let deltaV0 = 0.003
-  let deltaPhi = 0.003
+  let deltaV0 = 0.03
+  let deltaPhi = 0.03
   let R = 2
   let n = 7
   let a = 3
   let zoom = 3
-  let step = 0.01
-  for (let v0 = 0; v0 <= Math.PI; v0 += step) {
-    for (let phi = 0; phi <= 2 * Math.PI; phi += step) {
+  //let step = 0.01
+  for (let v0 = 0; v0 <= Math.PI; v0 += deltaV0) {
+    for (let phi = 0; phi <= 2 * Math.PI; phi += deltaPhi) {
       let x = calcX(v0, phi, a, R, n)
       let y = calcY(v0, phi, a, R, n)
       let z = calcZ(v0, R)
       vertexList.push(x / zoom, y / zoom, z / zoom)
 
-      x = calcX(v0 + step, phi, a, R, n)
-      y = calcY(v0 + step, phi, a, R, n)
-      z = calcZ(v0 + step, R)
+      x = calcX(v0 + deltaV0, phi, a, R, n)
+      y = calcY(v0 + deltaV0, phi, a, R, n)
+      z = calcZ(v0 + deltaV0, R)
       vertexList.push(x / zoom, y / zoom, z / zoom)
 
       let normal = m4.cross(
@@ -117,8 +149,8 @@ function CreateSurfaceData() {
       normalList.push(normal[0] / zoom, normal[1] / zoom, normal[2] / zoom)
 
       normal = m4.cross(
-        calcDerV0(v0 + step, phi, deltaV0, a, R, n),
-        calcDerPhi(v0 + step, phi, deltaPhi, a, R, n)
+        calcDerV0(v0 + deltaV0, phi, deltaV0, a, R, n),
+        calcDerPhi(v0 + deltaV0, phi, deltaPhi, a, R, n)
       )
       normalList.push(normal[0] / zoom, normal[1] / zoom, normal[2] / zoom)
     }
