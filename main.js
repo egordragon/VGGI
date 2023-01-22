@@ -77,10 +77,10 @@ function ShaderProgram(name, program) {
   this.iShininess = -1
 
   this.iTextureCoords = -1
-  this.iTMU = -1
+  this.iTextureU = -1
 
-  this.iFAngleRad = -1
-  this.iFPoint = -1
+  this.iTextureAngle = -1
+  this.iTexturePoint = -1
 
   this.Use = function () {
     gl.useProgram(this.prog)
@@ -251,7 +251,7 @@ function initGL() {
   shProgram.iLightVec = gl.getUniformLocation(prog, 'lightDirection')
 
   shProgram.iTextureCoords = gl.getAttribLocation(prog, 'textureCoords')
-  shProgram.iUTexture = gl.getUniformLocation(prog, 'uTexture')
+  shProgram.iTextureU = gl.getUniformLocation(prog, 'uTexture')
 
   shProgram.iTextureAngle = gl.getUniformLocation(prog, 'textureAngle')
   shProgram.iTexturePoint = gl.getUniformLocation(prog, 'texturePoint')
