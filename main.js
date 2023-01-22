@@ -4,6 +4,7 @@ let gl // The webgl context.
 let surface // A surface model
 let shProgram // A shader program
 let spaceball // A SimpleRotator object that lets the user rotate the view by mouse.
+let t = 0.0
 
 function deg2rad(angle) {
   return (angle * Math.PI) / 180
@@ -202,6 +203,18 @@ function initGL() {
   )
   shProgram.iColor = gl.getUniformLocation(prog, 'color')
 
+  shProgram.iNormal = gl.getAttribLocation(prog, 'normal')
+  shProgram.iNormalMatrix = gl.getUniformLocation(prog, 'normalMatrix')
+
+  shProgram.iAmbientColor = gl.getUniformLocation(prog, 'ambientColor')
+  shProgram.iDiffuseColor = gl.getUniformLocation(prog, 'diffuseColor')
+  shProgram.iSpecularColor = gl.getUniformLocation(prog, 'specularColor')
+
+  shProgram.iShininess = gl.getUniformLocation(prog, 'shininess')
+
+  shProgram.iLightPosition = gl.getUniformLocation(prog, 'lightPosition')
+  shProgram.iLightVec = gl.getUniformLocation(prog, 'lightDirection')
+
   surface = new Model('Surface')
   surface.BufferData(CreateSurfaceData())
 
@@ -267,3 +280,33 @@ function init() {
 
   draw()
 }
+
+const lightCoordinates = () => {
+  let r = 1.3
+  let coordx = r * Math.cos(t)
+  let coordy = r * Math.sin(t)
+  return [coordx, coordy, 3]
+}
+
+const onArrowLeft = () => {
+  t -= 0.1
+  draw()
+}
+
+const onArrowRight = () => {
+  t += 0.1
+  draw()
+}
+
+window.addEventListener('keydown', (event) => {
+  switch (event.key) {
+    case 'ArrowLeft':
+      onArrowLeft()
+      break
+    case 'ArrowRight':
+      onArrowRight()
+      break
+    default:
+      break
+  }
+})
