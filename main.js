@@ -5,6 +5,7 @@ let surface // A surface model
 let shProgram // A shader program
 let spaceball // A SimpleRotator object that lets the user rotate the view by mouse.
 let t = 0.0
+let point = { x: 0, y: 0 }
 
 function deg2rad(angle) {
   return (angle * Math.PI) / 180
@@ -15,14 +16,22 @@ function Model(name) {
   this.name = name
   this.iVertexBuffer = gl.createBuffer()
   this.iNormalBuffer = gl.createBuffer()
+  this.iTextureBuffer = gl.createBuffer()
   this.count = 0
 
-  this.BufferData = function ({ vertexList, normalList }) {
+  this.BufferData = function ({ vertexList, normalList, textureList }) {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.iVertexBuffer)
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexList), gl.STREAM_DRAW)
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.iNormalBuffer)
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normalList), gl.STREAM_DRAW)
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.iTextureBuffer)
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(textureList),
+      gl.STREAM_DRAW
+    )
 
     this.count = vertexList.length / 3
   }
@@ -35,6 +44,10 @@ function Model(name) {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.iNormalBuffer)
     gl.vertexAttribPointer(shProgram.iNormal, 3, gl.FLOAT, true, 0, 0)
     gl.enableVertexAttribArray(shProgram.iNormal)
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.iTextureBuffer)
+    gl.vertexAttribPointer(shProgram.iTextureCoords, 2, gl.FLOAT, false, 0, 0)
+    gl.enableVertexAttribArray(shProgram.iTextureCoords)
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.count)
   }
@@ -63,6 +76,12 @@ function ShaderProgram(name, program) {
   this.iSpecularColor = -1
   this.iShininess = -1
 
+  this.iTextureCoords = -1
+  this.iTMU = -1
+
+  this.iFAngleRad = -1
+  this.iFPoint = -1
+
   this.Use = function () {
     gl.useProgram(this.prog)
   }
@@ -73,6 +92,7 @@ function ShaderProgram(name, program) {
  * way to draw with WebGL.  Here, the geometry is so simple that it doesn't matter.)
  */
 function draw() {
+  const angle = document.getElementById('rotAngle').value
   gl.clearColor(0, 0, 0, 1)
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
@@ -118,12 +138,22 @@ function draw() {
   /* Draw the six faces of a cube, with different colors. */
   gl.uniform4fv(shProgram.iColor, [1, 1, 0, 1])
 
+  gl.uniform1f(shProgram.iTextureAngle, deg2rad(+angle))
+
+  gl.uniform2fv(shProgram.iTexturePoint, [
+    calcX(point.x, point.y, 3, 2, 7),
+    calcY(point.x, point.y, 3, 2, 7),
+  ])
+
+  gl.uniform1i(shProgram.iTextureU, 0)
+
   surface.Draw()
 }
 
 function CreateSurfaceData() {
   let vertexList = []
   let normalList = []
+  let textureList = []
   let deltaV0 = 0.03
   let deltaPhi = 0.03
   let R = 2
@@ -154,9 +184,12 @@ function CreateSurfaceData() {
         calcDerPhi(v0 + deltaV0, phi, deltaPhi, a, R, n)
       )
       normalList.push(normal[0] / zoom, normal[1] / zoom, normal[2] / zoom)
+
+      textureList.push(...calcTextureUV(v0, phi))
+      textureList.push(...calcTextureUV(v0 + deltaV0, phi + deltaPhi))
     }
   }
-  return { vertexList, normalList }
+  return { vertexList, normalList, textureList }
 }
 
 function calcX(v0, phi, a, R, n) {
@@ -189,6 +222,8 @@ const calcDerPhi = (v0, phi, deltaPhi, a, R, n) => [
   (calcZ(v0, R) - calcZ(v0, R)) / deltaPhi,
 ]
 
+const calcTextureUV = (u, v) => [(u + 5) / 3, v / 2]
+
 /* Initialize the WebGL context. Called from init() */
 function initGL() {
   let prog = createProgram(gl, vertexShaderSource, fragmentShaderSource)
@@ -215,8 +250,16 @@ function initGL() {
   shProgram.iLightPosition = gl.getUniformLocation(prog, 'lightPosition')
   shProgram.iLightVec = gl.getUniformLocation(prog, 'lightDirection')
 
+  shProgram.iTextureCoords = gl.getAttribLocation(prog, 'textureCoords')
+  shProgram.iUTexture = gl.getUniformLocation(prog, 'uTexture')
+
+  shProgram.iTextureAngle = gl.getUniformLocation(prog, 'textureAngle')
+  shProgram.iTexturePoint = gl.getUniformLocation(prog, 'texturePoint')
+
   surface = new Model('Surface')
   surface.BufferData(CreateSurfaceData())
+
+  loadTexture()
 
   gl.enable(gl.DEPTH_TEST)
 }
@@ -310,3 +353,18 @@ window.addEventListener('keydown', (event) => {
       break
   }
 })
+
+function loadTexture() {
+  const image = new Image()
+  image.crossOrigin = 'anonymous'
+  image.src =
+    'https://www.the3rdsequence.com/texturedb/download/258/texture/jpg/2048/yellow+bananas-2048x2048.jpg'
+  image.onload = () => {
+    const texture = gl.createTexture()
+    gl.bindTexture(gl.TEXTURE_2D, texture)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image)
+    draw()
+  }
+}
