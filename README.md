@@ -1,1 +1,1 @@
-![](https://github.com/egordragon/VGGI/blob/pa2/lab2.gif)
+![](https://github.com/egordragon/VGGI/blob/cgw/lab3.gif)
